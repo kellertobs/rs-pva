@@ -1,33 +1,35 @@
-function    [A,F] = scaleup(Fpp,App,Xns)
-% function [A1,F1]=kvb_scbk(m,n,kk,SUMxmin,ksumstat,Fpp1,App1)
-% MATLAB function  kvb_scbk.m
-% INPUT MATRICES
-%    m = number of samples
-%    n = number of variables
-%    kk=number of eigenvectors/factors retained
-%    SUMxmin  = SUM of the n variable's minimum values in constant row sum matrix
-%    ksumstat = constant row sum descriptive statistics matrix
-%               which has max and min for each variable.
-%    Fpp1 = Scores in transformed factor space
-%    App1 = Loadings in transformed factor space
-% OUTPUT MATRICES
-%    A1  = Scaled Loadings Matrix (EM Mixing Proportions) (Row Sum = 1)
-%    F1  = Scaled Scores Matrix (EM Compositions) Rows Sum to 100%
+% scaleup:  rs-pva subroutine to scale endmember compositions and mixing 
+%           proportions from transformed factor to measurement space.
+%
+%   [A,F] = scaleup(Fpp,App,Xns)
+% 
+%   Fpp    : input endmember compositions in transformed factor space
+%   App    : input mixing proportions in transformed factor space
+%   Xns    : input row-sum normalised data in measurment space
+%   F      : output endmember compositions scaled up to measurement units (row sum = 100%)
+%   A      : output mixing proportions scaled up to measurement units (row sum = 1)
+%
+% created  : 2020-03-21  Tobias Keller, University of Glasgow
+% based on : 1994-09-12  Glenn Johnson, University of Utah
+% license  : GNU General Public License v3.0
 
-% CALCULATE SCALE FACTORS
+
+function    [A,F] = scaleup(Fpp,App,Xns)
+
+% calculate scale factors
 SUMxmin = sum(min(Xns)); % numerator of Miesch equation 9
 SUMfran = sum(Fpp.*(max(Xns)-min(Xns)),2); % denominator of Miesch equation 9
 skpc    = (100-SUMxmin)./SUMfran; % Miesch equation (9)
 
-% Calculate oblique [F']
+% calculate intermediate scaled oblique endmembers [F']
 Fp = Fpp.*skpc;
 
-%Calculate oblique [F]
-F = Fp.*(max(Xns)-min(Xns)) + min(Xns);
+% calculate unscaled oblique endmembers in measurement units [F]
+F  = Fp.*(max(Xns)-min(Xns)) + min(Xns);
 
-% Calculate Miesch [A']
+% calculate intermediate scaled mixing proportions [A']
 Ap = App./skpc.';
 
-% Calculate Miesch [A]
+% calculate unscaled mixing proportions in measurement units [A]
 A  = Ap./sum(Ap,2);
 

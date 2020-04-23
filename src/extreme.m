@@ -1,11 +1,32 @@
-% Script to find k mutually extreme samples in dataset.
-% Notation follows Miesch (1976)
+% extreme:  rs-pva subroutine to find k mutually extreme samples in dataset
+%   
+%   [App0,Fpp0] = extreme(Appvm,Fppvm,Xns,DGN)
 %
-% created :            Glenn Johnson
-% modified: 2020-04-21 Tobias Keller
+%   Function determines the k mutually extreme samples in dataset in row-sum 
+%   normalised data Xns. Input Appvm and Fppvm are arrays with scaled and 
+%   varimax rotated mixing proportions and principal components for a mixing
+%   model with k endmembers. The routine passes back scaled initial guesses 
+%   for mixing proportions App0 and k endmember compositions Fpp0 as input
+%   for the rs-pva optimisation routine. Notation follows Miesch (1976).
+%
+%   Appvm  : input varimax rotated mixing proportions in transformed factor space
+%   Fppvm  : input varimax rotated endmember compositions in transformed factor space
+%   Xns    : row-sum normalised data in measurment space
+%   DGN    : input rs-pva diagnostics structure for data format metrics
+%   App0   : input starting guess mixing proportions in transformed factor space
+%   Fpp0   : input starting guess endmember compositions in transformed factor space
 
+% created  : 2020-03-21  Tobias Keller, University of Glasgow
+% based on : 1994-09-12  Glenn Johnson, University of Utah
+% license  : GNU General Public License v3.0
+
+
+function    [App0,Fpp0] = extreme(Appvm,Fppvm,Xns,DGN)
+
+k = DGN.k;
+m = DGN.m;
 rowsin = zeros(k,1);
-[Y,I]  = sort(abs(Appvm));
+[~,I]  = sort(abs(Appvm));
 kones  = ones(k,1);
 
 % Get samples with max mixing proportions in A'' for each principal component without duplication
@@ -102,4 +123,4 @@ while rowsin ~= rowsold
     iter = iter+1;
 end
 
-[A0,F0] = scaleup(Fpp0,App0,Xns);
+end  % end of function

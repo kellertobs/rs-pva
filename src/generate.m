@@ -1,4 +1,17 @@
-% generate samples for testing PVA
+% generate:  rs-pva subroutine to generate artificial data for testing.
+% 
+%   The script randomly generates datasets for specified number of endmembers,
+%   compositional variables, and samples. Each sample is found as a mixture 
+%   of endmembers with a small, random 'measurment error' added. A small
+%   number of samples is additionally shifted to mimick outlier data. The
+%   generated data is saved to in Matlab file format suitable for loading
+%   into the main rs-pva routine.
+%
+% created :    2020-03-21  Tobias Keller, University of Glasgow
+% license :    GNU General Public License v3.0
+
+
+% set parameters for generating data
 m = 50;   % number of samples
 n = 5;    % number of variables
 k = 3;    % number of endmembers

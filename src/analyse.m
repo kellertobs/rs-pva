@@ -1,10 +1,31 @@
-function [Xns,Xnr,Xsq,F,A,Fpp,App,DGN] = analyse(X)
+% analyse:  rs-pva subroutine to analyse dataset to determine optimal number 
+%           of endmembers for mixing model
+%
+%   [Xns,Xnr,Xsq,F,A,Fpp,App,DGN] = analyse(X)
+%
+%   X      : input raw data array in measurement units
+%   Xns    : output data array transformed to 100% row sum
+%   Xns    : output data array transformed to unit range
+%   Xns    : output data array transformed by square-root of sum of squares
+%   F      : output endmember compositions scaled up to measurement units (row sum = 100%)
+%   A      : output mixing proportions scaled up to measurement units (row sum = 1)
+%   Fpp    : output endmember compositions in transformed factor space
+%   App    : output mixing proportions in transformed factor space
+%   DGN    : input/output rs-pva diagnostics structure for various data format and statistical metrics
+%
+% created  : 2020-03-21  Tobias Keller, University of Glasgow
+% based on : 1994-09-12  Glenn Johnson, University of Utah
+% license  : GNU General Public License v3.0
+
+
+function [Xns,Xnr,Xsq,F,A,Fpp,App,DGN] = analyse(X,DGN)
 
 % Try alternative ways of calculating CDtab to get it to match
 % SAWVEC CD table.
 
-% get size of data matrix ? m: # samples, n: # variables
-[m,n]=size(X);
+% get m: # samples, n: # variables
+m = DGN.m;
+n = DGN.n;
 
 % Calculate descriptive statistics of untransformed data
 untrstat = ones(n,5);
@@ -77,16 +98,16 @@ App = u*s;  % scaled principal mixing proportions
 CDtab = ones(n,n-1);
 for z = 1:n-1
     kk   = z+1;
-    Ar   = App(:,1:z+1); % Reduced dimensional App
-    Fr   = Fpp(1:z+1,:); % Reduced dimensional Fpp
-    Xsqr = Ar*Fr;
+    Appr = App(:,1:z+1); % Reduced dimensional App
+    Fppr = Fpp(1:z+1,:); % Reduced dimensional Fpp
+    Xsqr = Appr*Fppr;
     
     disp(['    Calculating Varimax Matrices for ',int2str(z+1),' Components']);
-    [Appvm,~] = varimax(Ar); % get varimax rotated, scaled mixing proportions
+    Appvm = varimax(Appr); % get varimax rotated, scaled mixing proportions
     
     Fppvm   = (Appvm'*Appvm)\(Appvm'*Xsqr);  % get scaled endmember compositions
-    [Ar,Fr] = scaleup(Fppvm,Appvm,Xns);      % scale back endmembers and proportions to measurement units
-    Xnsf    = Ar*Fr;                         % calculate row-sum normalised fitted data
+    [Appr,Fppr] = scaleup(Fppvm,Appvm,Xns);      % scale back endmembers and proportions to measurement units
+    Xnsf    = Appr*Fppr;                         % calculate row-sum normalised fitted data
     
     resid = Xns-Xnsf;  % get residual between model fit and data
     for i = 1:n
@@ -100,8 +121,8 @@ disp(' ');
 % Calculate Communalities
 COMMtab = zeros(m,n-1);
 for j = 1:n-1
-    Ar = App(:,1:j+1);
-    COMMtab(:,j) = diag(Ar*Ar');
+    Appr = App(:,1:j+1);
+    COMMtab(:,j) = diag(Appr*Appr');
 end
 
 % Assemble diagnostics structure

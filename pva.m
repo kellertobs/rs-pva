@@ -1,6 +1,6 @@
 
 % PVA:  Polytopic Vector Analysis for Geochemical Data based on an algorithm
-%       provided by Glenn Johnson as published in 
+%       provided by Glenn Johnson, University of Utah, as published in 
 %
 %       Johnson, G.W., Ehrlich, R., Full, W., Ramos, S., 2015. 
 %       Principal Components Analysis and Receptor Models in Environmental 
@@ -46,11 +46,11 @@
 % cell arrays SNAME, and VNAME, respectively. If data is generated for
 % testing purposes, use array 'Xt' to provide true data values, 'At' for
 % true mixing proportions, and 'Ft' for true endmember compositions.
-
-% Author:   Tobias Keller, University of Glasgow
-% created:  2020-03-21
 %
-% license:  open source
+% created  : 2020-03-21  Tobias Keller, University of Glasgow
+% based on : 1994-09-12  Glenn Johnson, University of Utah
+% license  : GNU General Public License v3.0
+
 
 clear variables;       % clear workspace
 warning('off','all');  % turn off warning
@@ -123,7 +123,7 @@ while repeat
     Qsqk = Appk*Fppk;
     
     % do varimax of mix prop and calculate EM comp
-    [Appvm,~] = varimax(Appk);  % Returns scaled varimax mix prop Appvm
+    Appvm = varimax(Appk);  % Returns scaled varimax mix prop Appvm
     
     % calculate scaled EM comp Fppvm
     Fppvm = (Appvm'*Appvm)\(Appvm'*Qsqk);
@@ -189,8 +189,9 @@ init_method = input(['->  Choose PVA initialisation method (dft = 1): \n' ...
 if isempty(init_method); init_method = dft; end
 
 if     init_method == 1  % Initialise on k mutually extreme samples (Full, et al., 1981)
-    extreme 
-    
+    [App0,Fpp0] = extreme(Appvm,Fppvm,Xns,DGN);
+    [A0,F0]     = scaleup(Fpp0,App0,Xns);
+
 elseif init_method == 2  % Initialise on k fcm centroids (Full, et al., 1982)
     disp(' ');
     [O0,~,~] = fcm(Appvm,k);
@@ -200,7 +201,8 @@ elseif init_method == 2  % Initialise on k fcm centroids (Full, et al., 1982)
     [A0,F0]  = scaleup(Fpp0,App0,Xns);
 
 elseif init_method == 3  % Initialise on k varimax principal components
-    F0 = Fvm; A0 = Avm; 
+    A0 = Avm; 
+    F0 = Fvm; 
 end
 
 % visualise initial polytope and fitted data for k-EM model

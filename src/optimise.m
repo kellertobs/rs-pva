@@ -1,3 +1,20 @@
+% optimise: rs-pva subroutine to optimise for bestfit k-endmember compositions 
+%           and corresponding mixing proportions and fitted data.
+%
+%   [Abf,Fbf,Xbf,DGN] = optimise(A0,F0,X0,DGN,VNAME)
+%
+%   A0     : input starting guess mixing proportions scaled up to measurement units (row sum = 1)
+%   F0     : input starting guess endmember compositions scaled up to measurement units (row sum = 100%)
+%   X0     : input starting guess sample compositions in measurement units (row sum = 100%)
+%   Abf    : output best fit mixing proportions scaled up to measurement units (row sum = 1)
+%   Fbf    : output best fit endmember compositions scaled up to measurement units (row sum = 100%)
+%   Xbf    : output best fit sample compositions in measurement units (row sum = 100%)
+%   DGN    : input/output rs-pva diagnostics structure for various data format and statistical metrics
+%
+% created  : 2020-03-21  Tobias Keller, University of Glasgow
+% based on : 1994-09-12  Glenn Johnson, University of Utah
+% license  : GNU General Public License v3.0
+
 
 function [Abf,Fbf,Xbf,DGN] = optimise(A0,F0,X0,DGN,VNAME)
 
