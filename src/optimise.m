@@ -1,5 +1,5 @@
 
-function [Abf,Fbf,Xbf,DGN] = solve(A0,F0,X0,DGN,VNAME)
+function [Abf,Fbf,Xbf,DGN] = optimise(A0,F0,X0,DGN,VNAME)
 
 % initialise variables and parameters
 Xbf     = X0;

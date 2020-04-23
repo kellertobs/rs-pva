@@ -16,7 +16,7 @@
 % principal components of the data set to provide metrics by which to select
 % an optimal number of endmembers and reject outliers from the data set.
 %
-% In the second step, the script resolves the endmember compositions and
+% In the second step, the script optimises the endmember compositions and
 % mixing proportions to fit each sample in the data set. The routine in this
 % script combines some of the steps of the original algorithm with a randomised 
 % search algorithm to determine the best fit endmember compositions and mixing 
@@ -206,8 +206,8 @@ end
 % visualise initial polytope and fitted data for k-EM model
 visualise({Xns,Xnsf,F0},{'data','fitted data','EM initial guess'},['Fitted data with ',num2str(k),'-EM starting guess'],DGN,VNAME)
 
-% resolve best fit EM compositions 'Fbf', mixing proportions 'Abf', and fitted data 'Xbf'
-[Abf,Fbf,Xbf,DGN] = solve(A0,F0,Xnsf,DGN,VNAME);
+% optimise for best fit EM compositions 'Fbf', mixing proportions 'Abf', and fitted data 'Xbf'
+[Abf,Fbf,Xbf,DGN] = optimise(A0,F0,Xnsf,DGN,VNAME);
 
 % report final data fit and EM compositions
 DGN.CD = (std(Xns).^2-std(Xbf-Xns).^2)./std(Xns).^2;
