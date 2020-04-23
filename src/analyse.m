@@ -111,3 +111,5 @@ DGN.stat.nrng = nrngstat;
 DGN.SVD       = sv;
 DGN.CDvar     = CDtab;
 DGN.CMsmp     = COMMtab;
+DGN.m         = m;
+DGN.n         = n;

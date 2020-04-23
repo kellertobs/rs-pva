@@ -54,7 +54,7 @@
 
 clear variables;       % clear workspace
 warning('off','all');  % turn off warning
-
+addpath ./src ./data   % add paths to source code and data directories
 
 %*****  PREP: LOAD DATA  **************************************************
 
@@ -68,34 +68,27 @@ if isempty(file); file = dft; end
 if strcmp(file(end-3:end),'.csv') || ...  % load data from text file
    strcmp(file(end-3:end),'.txt') || ...
    strcmp(file(end-3:end),'.dat')
-    DATA = readtable(['../data/',file]);
+    DATA  = readtable(file);
     PRJCT = DATA.Properties.VariableNames(1    ); PRJCT = PRJCT{:};
     VNAME = DATA.Properties.VariableNames(2:end);
     SNAME = DATA{:    ,1};
     X     = DATA{:,2:end};
 else % assume data is provided as Matlab file
-    load(['../data/',file]);
+    load(file);
 end
-[m,n] = size(X); 
+
+% store number of samples and variables in diagnostics structure
+[m,n] = size(X);
+DGN.m = m; DGN.n = n;
+DGN.Ii     = (1:m).';
+DGN.Ir     = [];
 
 % plot unprocessed data
-FS = {'FontSize',14}; MS = {'MarkerSize',8};
-ii = ceil(sqrt(n-1)); jj = ceil((n-1)/ii); kk = 1;
-figure(1); clf;
-for i = 1:ii
-    for j = 1:jj
-        subplot(ii,jj,kk); box on; hold on;
-        plot(X (:,1),X (:,kk+1),'k.',MS{:}); 
-        if exist('Ft','var'); plot(Ft(:,1),Ft(:,kk+1),'r*',MS{:}); end
-        xlabel(VNAME{1},FS{:}); ylabel(VNAME{kk+1},FS{:});
-        if kk==1; legend('unprocessed data','true endmembers',FS{:},'Location','northoutside'); end
-        kk = kk+1;
-        if (kk>n-1); break; end
-    end
+if exist('Ft','var')  % if true EM known
+    visualise({X,Xt,Ft},{'data','true comp.','true EM'},'Unprocessed Data',DGN,VNAME)
+else
+    visualise({X},{'data'},'Unprocessed Data',DGN,VNAME)
 end
-sgtitle('Unprocessed data',FS{:})
-drawnow
-
 
 %*****  STEP 1: ANALYSE DATA  *********************************************
 
@@ -119,6 +112,7 @@ CVtol  = tol(2);
 kCD    = 1 + find(min(DGN.CDvar  )>CDtol,1);
 kCV    =     find(    DGN.SVD(:,4)>CVtol,1);
 k      = max(kCD,kCV);
+DGN.k  = k;
 
 % do varimax rotation and initial outlier removal for chosen EMs
 repeat = 1;
@@ -149,49 +143,28 @@ while repeat
     DGN.rm     = length(DGN.Ir);
     
     % visualise principle components and fitted data for k-EM model
-    ii = ceil(sqrt(n-1)); jj = ceil((n-1)/ii); kk = 1;
-    FS = {'FontSize',14}; MS = {'MarkerSize',8};
-    figure(1); clf;
-    for i = 1:ii
-        for j = 1:jj
-            subplot(ii,jj,kk); box on; hold on;
-            plot(Xns (DGN.Ii,1),Xns (DGN.Ii,kk+1),'k.',MS{:});
-            plot(Xns (DGN.Ir,1),Xns (DGN.Ir,kk+1),'ko',MS{:});
-            plot(Xnsf(DGN.Ii,1),Xnsf(DGN.Ii,kk+1),'g.',MS{:});
-            plot(Xnsf(DGN.Ir,1),Xnsf(DGN.Ir,kk+1),'go',MS{:});
-            plot(Fvm(:,1),Fvm(:,kk+1),'m*',MS{:});
-            if exist('Ft','var'); plot(Ft(:,1),Ft(:,kk+1),'r*',MS{:}); end
-            xlabel(VNAME{1},FS{:}); ylabel(VNAME{kk+1},FS{:});
-            if kk==1
-                if DGN.rm
-                    legend('included data','removed data','included fits','removed fits','principal components','true endmembers',FS{:},'Location','northoutside');
-                else
-                    legend('data','fits','principal components','true endmembers',FS{:},'Location','northoutside');
-                end
-            end
-            kk = kk+1;
-            if (kk>n-1); break; end
-        end
-    end
-    sgtitle(['Original and fitted data with ',num2str(k),' principle components'],FS{:})
-    drawnow
+    visualise({Xns,Xnsf,Fvm},{'data','fitted data','principal comp.'},['Fitted data with ',num2str(k),' principle components'],DGN,VNAME)
     
     % plot selection metrics
+    FS = {'FontSize',14}; MS = {'MarkerSize',8}; LW = {'LineWidth',1.5};
     figure(2); clf;
     sgtitle(['Selected ',int2str(k),' endmembers for mixing model'],FS{:})
     subplot(1,3,1)
-    plot(DGN.SVD(:,1),DGN.SVD(:,2),'k-',DGN.SVD(:,1),DGN.SVD(:,2),'ko',MS{:}); hold on; box on; axis tight;
-    plot(DGN.SVD(k,1),DGN.SVD(k,2),'ro',MS{:});
+    plot(DGN.SVD(:,1),DGN.SVD(:,2),'k-',DGN.SVD(:,1),DGN.SVD(:,2),'ko',MS{:},LW{:}); hold on; box on; axis tight;
+    plot(DGN.SVD(k,1),DGN.SVD(k,2),'ro',MS{:},LW{:});
+    set(gca,LW{:});
     title('singular values',FS{:});
     subplot(1,3,2)
-    plot([DGN.SVD(1,1),DGN.SVD(end,1)],[CVtol,CVtol],'b-',MS{:}); hold on; box on; axis tight;
-    plot(DGN.SVD(:,1),DGN.SVD(:,4),'k-',DGN.SVD(:,1),DGN.SVD(:,4),'ko',MS{:});
-    plot(DGN.SVD(k,1),DGN.SVD(k,4),'ro',MS{:});
+    plot([DGN.SVD(1,1),DGN.SVD(end,1)],[CVtol,CVtol],'b-',MS{:},LW{:}); hold on; box on; axis tight;
+    plot(DGN.SVD(:,1),DGN.SVD(:,4),'k-',DGN.SVD(:,1),DGN.SVD(:,4),'ko',MS{:},LW{:});
+    plot(DGN.SVD(k,1),DGN.SVD(k,4),'ro',MS{:},LW{:});
+    set(gca,LW{:});
     title('cum. variance',FS{:})
     subplot(1,3,3)
-    plot([DGN.SVD(1,1),DGN.SVD(end,1)],[CDtol,CDtol],'b-',MS{:}); hold on; box on; axis tight;
-    plot(DGN.SVD(:,1),[nan,min(DGN.CDvar)].','k-',DGN.SVD(:,1),[nan,min(DGN.CDvar)].','ko',MS{:});
-    plot(DGN.SVD(k,1),min(DGN.CDvar(:,k-1)),'ro',MS{:});
+    plot([DGN.SVD(1,1),DGN.SVD(end,1)],[CDtol,CDtol],'b-',MS{:},LW{:}); hold on; box on; axis tight;
+    plot(DGN.SVD(:,1),[nan,min(DGN.CDvar)].','k-',DGN.SVD(:,1),[nan,min(DGN.CDvar)].','ko',MS{:},LW{:});
+    plot(DGN.SVD(k,1),min(DGN.CDvar(:,k-1)),'ro',MS{:},LW{:});
+    set(gca,LW{:});
     title('min. CD Coefficients',FS{:})
     
     % decide to procede with selected model or change selection
@@ -231,72 +204,39 @@ elseif init_method == 3  % Initialise on k varimax principal components
 end
 
 % visualise initial polytope and fitted data for k-EM model
-figure(1); clf; kk = 1;
-for i = 1:ii
-    for j = 1:jj
-        subplot(ii,jj,kk); box on; hold on;
-        plot(Xns (DGN.Ii,1),Xns (DGN.Ii,kk+1),'k.',MS{:});
-        plot(Xns (DGN.Ir,1),Xns (DGN.Ir,kk+1),'ko',MS{:});
-        plot(Xnsf(DGN.Ii,1),Xnsf(DGN.Ii,kk+1),'g.',MS{:});
-        plot(Xnsf(DGN.Ir,1),Xnsf(DGN.Ir,kk+1),'go',MS{:});
-        plot(F0(:,1),F0(:,kk+1),'m*',MS{:});
-        if exist('Ft','var'); plot(Ft(:,1),Ft(:,kk+1),'r*',MS{:}); end
-        xlabel(VNAME{1},FS{:}); ylabel(VNAME{kk+1},FS{:});
-        if kk==1
-            if DGN.rm
-                legend('included data','removed data','included fits','removed fits','EM initial guess','true endmembers',FS{:},'Location','northoutside');
-            else
-                legend('data','fits','EM initial guess','true endmembers',FS{:},'Location','northoutside');
-            end
-        end
-        kk = kk+1;
-        if (kk>n-1); break; end
-    end
-end
-sgtitle(['Original and fitted data with ',num2str(k),'-EM starting compositions'],FS{:})
-drawnow
+visualise({Xns,Xnsf,F0},{'data','fitted data','EM initial guess'},['Fitted data with ',num2str(k),'-EM starting guess'],DGN,VNAME)
 
 % resolve best fit EM compositions 'Fbf', mixing proportions 'Abf', and fitted data 'Xbf'
 [Abf,Fbf,Xbf,DGN] = solve(A0,F0,Xnsf,DGN,VNAME);
 
 % report final data fit and EM compositions
-DGN.CD = (std(Xns).^2-std(Xnsf-Xns).^2)./std(Xns).^2;
+DGN.CD = (std(Xns).^2-std(Xbf-Xns).^2)./std(Xns).^2;
 [~,i]  = sort(Fbf(:,1));
 disp(' ');
 disp('==============================================================');
 disp(' ');
-disp(['--  FINAL FIT: VAR. CD = ',num2str(DGN.CD                 ,'%1.3f  ')]);  
-disp(['               NORM CD = ',num2str(norm(DGN.CD,2)./sqrt(n),'%1.3f  ')]);
+fprintf(1,'                         '); 
+for nn=1:n
+    fprintf(1,'%s   ',VNAME{nn});
+    for ll = 1:5-length(VNAME{nn}); fprintf(1,' '); end
+end; fprintf(1,'\n');
+disp([    '==> FINAL FIT: VAR. CD = ',num2str(DGN.CD                 ,'%1.3f   ')]);  
+disp([    '               NORM CD = ',num2str(norm(DGN.CD,2)./sqrt(n),'%1.3f   ')]);    fprintf(1,'\n');
+disp(     '==> FINAL EM COMPOSITIONS:');
 disp(' ');
-disp('   FINAL EM COMPOSITIONS:');
-disp(' ');
-disp(Fbf(i,:).');
+for nn=1:n
+    fprintf('%s  ',VNAME{nn}); 
+    for ll = 1:8-length(VNAME{nn}); fprintf(1,' '); end
+    for kk=1:k; if Fbf(i(kk),nn)<10; fprintf(1,' '); end; fprintf(1,'%2.3f  ',Fbf(i(kk),nn)); end
+    fprintf(1,'\n'); 
+end
 disp(' ');
 
 % visualise resolved EM components and fitted data
-figure(1); clf; kk = 1;
-for i = 1:ii
-    for j = 1:jj
-        subplot(ii,jj,kk); box on; hold on;
-        plot(Xns (DGN.Ii,1),Xns (DGN.Ii,kk+1),'k.',MS{:});
-        plot(Xns (DGN.Ir,1),Xns (DGN.Ir,kk+1),'ko',MS{:});
-        plot(Xbf (:     ,1),Xbf (:     ,kk+1),'g.',MS{:});
-        plot(Xnsf(DGN.Ir,1),Xnsf(DGN.Ir,kk+1),'go',MS{:});
-        plot(Fbf(:,1),Fbf(:,kk+1),'m*',MS{:});
-        if exist('Ft','var'); plot(Ft(:,1),Ft(:,kk+1),'r*',MS{:}); end
-        xlabel(VNAME{1},FS{:}); ylabel(VNAME{kk+1},FS{:});
-        if kk==1
-            if DGN.rm
-                legend('included data','removed data','included fits','removed fits','resolved endmembers','true endmembers',FS{:},'Location','northoutside');
-            else
-                legend('data','fits','resolved endmembers','true endmembers',FS{:},'Location','northoutside');
-            end
-        end
-        kk = kk+1;
-        if (kk>n-1); break; end
-    end
+if exist('Ft','var')
+    visualise({Xns,Xbf,Fbf,Ft},{'data','best fit data','best fit EM','true EM'},['Best fit ',num2str(k),'-EM model: CD norm = ',num2str(norm(DGN.CD,2)./sqrt(n),3),', ',int2str(DGN.rm),' outliers removed'],DGN,VNAME)
+else
+    visualise({Xns,Xbf,Fbf},{'data','best fit data','best fit EM'},['Best fit ',num2str(k),'-EM model: CD norm = ',num2str(norm(DGN.CD,2)./sqrt(n),3),', ',int2str(DGN.rm),' outliers removed'],DGN,VNAME)
 end
-sgtitle(['Final ',num2str(k),'-EM model:  CD norm ',num2str(norm(DGN.CD,2)./sqrt(n),3),';  ',num2str(DGN.it),' iterations;  ',num2str(DGN.rm),' outliers removed;'],FS{:})
-drawnow
 
 % end of script
