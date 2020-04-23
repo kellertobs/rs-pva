@@ -8,5 +8,7 @@ To run the program, execute the script rs_pva.m in Matlab and follow the prompts
 
 **References**
 Oeste, M., Wörner, G. (2016). Central Andean magmatism can be constrained by three ubiquitous end‐members. *Terra Nova*  28(6), 434-440. https://dx.doi.org/10.1111/ter.12237.
+
 Johnson, G.W., Ehrlich, R., Full, W., Ramos, S., (2015). Principal Components Analysis and Receptor Models in Environmental Forensics. In: Murphy, B. L., Morrison, R.D. (Eds.), Introduction to Environmental Forensics, pp. 609?653. ISBN: 9780124046962.
+
 Rawson, H., Keller, T., Fontijn, K., Pyle, D., Mather, T., Smith, V., Naranjo, J. (2016). Compositional variability in mafic arc magmas over short spatial and temporal scales: Evidence for the signature of mantle reactive melt channels. *Earth And Planetary Science Letters* 456, 66-77. https://dx.doi.org/10.1016/j.epsl.2016.09.056.
