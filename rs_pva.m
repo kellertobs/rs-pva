@@ -1,11 +1,11 @@
 
-% PVA:  Polytopic Vector Analysis for Geochemical Data based on an algorithm
-%       provided by Glenn Johnson, University of Utah, as published in 
+% rs_pva:  Randomised Search Polytopic Vector Analysis for Geochemical Data 
+%          based on an algorithm provided by Glenn Johnson, University of Utah,  
 %
-%       Johnson, G.W., Ehrlich, R., Full, W., Ramos, S., 2015. 
-%       Principal Components Analysis and Receptor Models in Environmental 
-%       Forensics. In: Murphy, B. L., Morrison, R.D. (Eds.), Introduction 
-%       to Environmental Forensics, pp. 609?653. ISBN: 9780124046962.
+%          Johnson, G.W., Ehrlich, R., Full, W., Ramos, S., 2015. 
+%          Principal Components Analysis and Receptor Models in Environmental 
+%          Forensics. In: Murphy, B. L., Morrison, R.D. (Eds.), Introduction 
+%          to Environmental Forensics, pp. 609?653. ISBN: 9780124046962.
 %
 % This script performs principle component and polytopic vector analysis to
 % resolve the number and composition of endmembers to resolve a mixing model 
@@ -97,7 +97,7 @@ disp(['Analyse dataset: ',PRJCT,' (',int2str(m),' samples, ',int2str(n),' variab
 disp(' ');
 
 % analyse dataset
-[Xns,Xnr,Xsq,F,A,Fpp,App,DGN] = analyse(X);
+[Xns,Xnr,Xsq,F,A,Fpp,App,DGN] = analyse(X,DGN);
 
 % set tolerances for EM selections
 dft = [0.6,98];
