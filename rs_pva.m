@@ -100,13 +100,15 @@ disp(' ');
 [Xns,Xnr,Xsq,F,A,Fpp,App,DGN] = analyse(X,DGN);
 
 % set tolerances for EM selections
-dft = [0.6,98];
+dft = [0.6,98,0.05];
 tol = input(['->  Adjust endmember selection tolerances as list [CDtol,CVtol] \n' ...
              '    CDtol: selection tolerance for coefficients of data fit (dft = ',num2str(dft(1)),') \n' ...
-             '    CVtol: selection tolerance for cumulative variance      (dft = ',num2str(dft(2)),') \n' ]);
+             '    CVtol: selection tolerance for cumulative variance      (dft = ',num2str(dft(2)),') \n' ...
+             '    ORtol: selection tolerance for outlier data removal     (dft = ',num2str(dft(3)),') \n' ]);
 if isempty(tol); tol = dft; end
 CDtol  = tol(1);
 CVtol  = tol(2);
+ORtol  = tol(3);
 
 % select number of EMs 'k'
 kCD    = 1 + find(min(DGN.CDvar  )>CDtol,1);
@@ -135,15 +137,14 @@ while repeat
     Xnsf = Avm*Fvm;
     
     % remove outlier points with bad fit to k-EM model
-    outtol     = 1;
-    ir         = find(std(Xnsf-Xns,[],2).^2./std(Xns(:)).^2 > outtol);
+    ir         = find(std(Xnsf-Xns,[],2).^2./std(Xns(:)).^2 > ORtol);
     DGN.Ir     = ir;
     DGN.Ii     = (1:m).';
     DGN.Ii(ir) = [];
     DGN.rm     = length(DGN.Ir);
     
     % visualise principle components and fitted data for k-EM model
-    visualise({Xns,Xnsf,Fvm},{'data','fitted data','principal comp.'},['Fitted data with ',num2str(k),' principle components'],DGN,VNAME)
+    visualise({Xns,Xnsf,Fvm},{'data','fitted data','principal comp.'},['Fitted data with ',num2str(k),' principle components;',int2str(DGN.rm),' outliers removed.'],DGN,VNAME)
     
     % plot selection metrics
     FS = {'FontSize',14}; MS = {'MarkerSize',8}; LW = {'LineWidth',1.5};
@@ -175,6 +176,7 @@ while repeat
     if ~prcd;    return;     end
     if  prcd>1;  k = prcd;   end
     if  prcd==1; repeat = 0; end
+    DGN.k = k;
 end
 
 
@@ -194,19 +196,16 @@ if     init_method == 1  % Initialise on k mutually extreme samples (Full, et al
 
 elseif init_method == 2  % Initialise on k fcm centroids (Full, et al., 1982)
     disp(' ');
-    [O0,~,~] = fcm(Appvm,k);
+    [F0,~,~] = fcm(Xns,k);
+    A0       = (Xns*Xns.')/(F0*Xns.');
     disp(' ');
-    Fpp0     = O0*Fppvm;
-    App0     = Appvm/O0;
-    [A0,F0]  = scaleup(Fpp0,App0,Xns);
-
 elseif init_method == 3  % Initialise on k varimax principal components
-    A0 = Avm; 
-    F0 = Fvm; 
+    A0 = Avm;
+    F0 = Fvm;
 end
 
 % visualise initial polytope and fitted data for k-EM model
-visualise({Xns,Xnsf,F0},{'data','fitted data','EM initial guess'},['Fitted data with ',num2str(k),'-EM starting guess'],DGN,VNAME)
+visualise({Xns,Xnsf,F0},{'data','fitted data','EM initial guess'},['Fitted data with ',num2str(k),'-EM starting guess;',int2str(DGN.rm),' outliers removed.'],DGN,VNAME)
 
 % optimise for best fit EM compositions 'Fbf', mixing proportions 'Abf', and fitted data 'Xbf'
 [Abf,Fbf,Xbf,DGN] = optimise(A0,F0,Xnsf,DGN,VNAME);
@@ -216,6 +215,8 @@ DGN.CD = (std(Xns).^2-std(Xbf-Xns).^2)./std(Xns).^2;
 [~,i]  = sort(Fbf(:,1));
 disp(' ');
 disp('==============================================================');
+disp(' ');
+disp(['==> CONVERGED: ',int2str(DGN.it),' iterations; final misfit ',num2str(DGN.bf,3),'; ',int2str(DGN.rm),' outliers removed.']);
 disp(' ');
 fprintf(1,'                         '); 
 for nn=1:n
