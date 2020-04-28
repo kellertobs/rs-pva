@@ -64,7 +64,7 @@ Xsq = Xnr./(sum(Xnr.^2,2).^0.5);
 [u,s,v] = svd(Xsq,0);
 sv      = ones(n,4);
 sv(:,1) = 1:n;
-sv(:,2) = diag(s).^2;
+sv(:,2) = log10(diag(s).^2);
 sv(:,3) = diag(s).^2./sum(s(:).^2).*100;
 sv(:,4) = cumsum(sv(:,3));
 
@@ -76,23 +76,6 @@ App = u*s;  % scaled principal mixing proportions
 
 % Scale back up to measurement units
 [A,F] = scaleup(Fpp,App,Xns);
-
-% % Calculate scale factor
-% SUMxmin = sum(min(Xns)); % numerator of Miesch equation 9
-% SUMfran = sum(Fpp.*(max(Xns)-min(Xns)),2); % denominator of Miesch equation 9
-% skpc    = (100-SUMxmin)./SUMfran; % Miesch equation (9)
-% 
-% % Calculate [F'] in Miesch equation 12
-% Fp = Fpp.*skpc;
-% 
-% % Calculate [F] in Miesch equation 16
-% F = Fp.*(max(Xns)-min(Xns)) + min(Xns);
-% 
-% % Calculate Miesch [A']
-% Ap = App./skpc.';
-% 
-% % Calculate Miesch [A]
-% A  = Ap./sum(Ap,2);
 
 % Calculate Goodness of Fit Statistics: Coefficients of Determination
 CDtab = ones(n,n-1);
