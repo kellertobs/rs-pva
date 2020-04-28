@@ -28,9 +28,10 @@ hj    = sqrt(diag(App*App'));
 Ah = App./hj;
 V0 = m*sum(sum(Ah.^4))-sum(sum(Ah.^2).^2);
 
-res = 1;
-tol = 1e-4;
-it  = 1;
+res    = 1;
+tol    = 1e-6;
+maxits = 50;
+it     = 1;
 while res >= tol % iterate until residual below tolerance
     for i=1:n-1  % cycles through 2 factors at a time.
         jl=i+1;
@@ -67,7 +68,7 @@ while res >= tol % iterate until residual below tolerance
     res   = (V-V0)./V0;
     V0    = V;
     it    = it+1;
-    if it > 20; error('Varimax rotation did not converge after 20 iterations!'); end
+    if it > maxits; error('Varimax rotation did not converge after 20 iterations!'); end
 end
 
 % End varimax
@@ -80,4 +81,4 @@ for j=1:n
 end
 
 % Normalize varimax mixing proportions to unity row sum
-Appvm  = Appvm./sum(Appvm,2);
+Appvm = Appvm./sum(Appvm,2);

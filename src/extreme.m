@@ -23,102 +23,77 @@
 
 function    [App0,Fpp0] = extreme(Appvm,Fppvm,Xns,DGN)
 
-k = DGN.k;
-m = DGN.m;
-rowsin = zeros(k,1);
-[~,I]  = sort(abs(Appvm));
-kones  = ones(k,1);
+k    = DGN.k;
+rows = zeros(k,1);
 
-% Get samples with max mixing proportions in A'' for each principal component without duplication
-for i=1:k
-    mm   = m;
-    samp = I(mm,i);
-    chk  = samp*kones;
-    if all(chk-rowsin)
-        rowsin(i) = samp;
-        chk(i)    = samp+1;
+% Get k unique samples with extreme mixing proportions from A''
+[~,Irs] = sort(abs(Appvm),1,'descend','ComparisonMethod','abs');
+for i = 1:k
+    j = 1;
+    if any(Irs(j,i)==Irs(j,(1:k)<i))
+        rows(i) = Irs(2,i);
     else
-        while ~all(chk-rowsin)
-            samp = I(mm-1,i);
-            chk  = samp*kones;
-            if all(chk-rowsin)
-                rowsin(i) = samp;
-                chk(i)    = samp+1;
-            else
-                mm = mm-1;
-            end
-        end
+        rows(i) = Irs(1,i);
     end
 end
 
-% Calculate oblique transform matrix O0 (rows of A'' for three unique max. mixing proportions)
-O0 = Appvm(rowsin,:);
+% Calculate oblique transform matrix O0 (rows of A'' for k unique max. mixing proportions)
+O0 = Appvm(rows,:);
 
 % Calculate initial oblique endmembers and mixing proportions
 Fpp0 = O0*Fppvm;
 App0 = Appvm/O0;
 
-% Save initial oblique transform matrix in case XRAWC does not converge
-O0i     = O0;
-rowsini = rowsin;
+% Save initial oblique transform matrix in case EXTREME algorithm does not converge
+O0i    = O0;
+rowsin = rows;
 
-% Begin XRAWC iterations
-niter   = 30;
-rowsold = 0.*rowsin;
+% Begin EXTREME iterations
+maxit   = 20;
+rowsold = 0.*rows;
 iter    = 1;
-while rowsin ~= rowsold
+while any(rows ~= rowsold)
     
-    % Scale Matrices to measurement units
+    rowsold = rows;
+
+    % scale matrices to measurement units
     [A0,~]  = scaleup(Fpp0,App0,Xns);
-    rowsold = rowsin;
     
-    % Sort mixing proportions
-    [Y,I]  = sort(A0);
-    rowsin = zeros(k,1);
-    kones = ones(k,1);
-    
-    % Get max loadings samples without duplication
-    for i=1:k
-        mm   = m;
-        samp = I(mm,i);
-        chk  = samp*kones;
-        if all(chk-rowsin)
-            rowsin(i) = samp;
-            chk(i)    = samp+1;
+    % Get k unique samples with extreme mixing proportions from A0
+    [~,Irs] = sort(A0,1,'descend');
+    for i = 1:k
+        j = 1;
+        if any(Irs(j,i)==Irs(j,(1:k)<i))
+            rows(i) = Irs(2,i);
         else
-            while ~all(chk-rowsin)
-                samp = I(mm-1,i);
-                chk  = samp*kones;
-                if all(chk-rowsin)
-                    rowsin(i) = samp;
-                    chk(i)    = samp+1;
-                else
-                    mm = mm-1;
-                end
-            end
+            rows(i) = Irs(1,i);
         end
     end
     
-    % Extract new oblique transform matrix
-    O0 = Appvm(rowsin,:);
-    
-    % Stop iterating and use initial max proportions when niter reached
-    if iter == niter
-        disp(['  ! Extreme samples determination did not converge after ',int2str(iter),' iterations:'])
-        disp(['    Initial polytope vertices will use maximum varimax proportions: ',num2str(rowsini.')]);
-        disp(' ');
-        rowsin  = rowsini;
-        rowsold = rowsin;
-        O0      = O0i;
-    else
-        disp(['  - Extreme samples determination converged after ',int2str(iter),' iterations:'])
-        disp(['    Initial polytope vertices will use samples: ',num2str(rowsin.')]);
-        disp(' ');
-    end
+    % Extract updated oblique transform matrix
+    O0 = Appvm(rows,:);
     
     % calculate updated endmembers and proportions
     Fpp0 = O0*Fppvm;
     App0 = Appvm/O0;
+    
+    % Report convergance
+    if all(rowsold == rows)
+        disp(['  - Extreme samples determination converged after ',int2str(iter),' iterations:'])
+        disp(['    Initial polytope vertices will use samples: ',num2str(rows.')]);
+        disp(' ');
+    end
+    
+    % Stop iterating and use initial extreme mix. proportions when maxits reached
+    if iter == maxit
+        disp(['  ! Extreme samples determination did not converge after ',int2str(iter),' iterations:'])
+        disp(['    Initial polytope vertices will use samples: ',num2str(rowsin.')]);
+        disp(' ');
+        O0      = O0i;
+        Fpp0    = O0*Fppvm;
+        App0    = Appvm/O0;
+        break;
+    end
     
     iter = iter+1;
 end
