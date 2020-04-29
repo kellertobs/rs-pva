@@ -41,7 +41,7 @@ par = input(['->  Adjust convergence parameters as list: [msftol,negtol,maxits,a
              '    negtol: tolerance for negative mixing proportions (dft = ',num2str(dft(2)),') \n' ...
              '    maxits: unsuccesful iterations to outlier removal (dft = ',num2str(dft(3)),') \n' ...
              '    alpha : step size for iterative update            (dft = ',num2str(dft(4)),') \n' ...
-             '    beta  : step size for randomised update           (dft = ',num2str(dft(4)),') \n']);
+             '    beta  : step size for randomised update           (dft = ',num2str(dft(5)),') \n']);
 if isempty(par); par = dft; end
 
 msftol  = par(1);
@@ -56,8 +56,9 @@ plt = input('->  Every how often do you wish to plot progress of optimisation (e
 if isempty(plt); plt = dft; end
 
 % initialise residuals
-res_Adf = (X0(Ii,:)*X0(Ii,:).')/(Ff*X0(Ii,:).') - Af(Ii,:);
-res_Ann = max(-negtol,Af(Ii,:)) - Af(Ii,:);
+res_Adf = 0.*Af(Ii,:);
+res_Ann = 0.*Af(Ii,:);
+rnd_stp = 0.*Af(Ii,:);
 
 % iterative optimisation algorithm, minimise misfit function below tolerance
 while misfit > msftol && it < maxits
@@ -65,8 +66,8 @@ while misfit > msftol && it < maxits
     % update mixing proportions (no smaller than tolerance, unity sum)
     Af(Ii,:) = Af(Ii,:) + alpha .* res_Adf;
     Af(Ii,:) = Af(Ii,:) + alpha .* res_Ann;
-    Af(Ii,:) = Af(Ii,:) + beta  .* (normrnd(Abf(Ii,:),abs(Abf(Ii,:)).*min(1,bestfit)) - Af(Ii,:));
-    Af = Af./sum(Af,2);
+    Af(Ii,:) = Af(Ii,:) + beta  .* rnd_stp;
+%     Af = Af./sum(Af,2);
     
     % update EM compositions (no negatives, 100% sum)
     Ff = (Af(Ii,:).'*Af(Ii,:))\(Af(Ii,:).'*X0(Ii,:));  % Lsq-solve for EM comp
@@ -77,8 +78,12 @@ while misfit > msftol && it < maxits
     Xf(Ii,:) = Af(Ii,:)*Ff;  
     
     % update residuals
-    res_Adf = (X0(Ii,:)*X0(Ii,:).')/(Ff*X0(Ii,:).') - Af(Ii,:);
-    res_Ann = max(-negtol,Af(Ii,:)) - Af(Ii,:);
+    res_Adf = (X0(Ii,:)*X0(Ii,:).')/(Ff*X0(Ii,:).');
+    res_Adf = res_Adf./(sum(res_Adf,2)) - Af(Ii,:);
+    res_Ann = max(-negtol,Af(Ii,:));
+    res_Ann = res_Ann./(sum(res_Ann,2))  - Af(Ii,:);
+    rnd_stp = normrnd(Abf(Ii,:),abs(Abf(Ii,:)).*min(0.1,bestfit));
+    rnd_stp = rnd_stp./(sum(rnd_stp,2)) - Af(Ii,:);
     
     % update residual norms
     msft_dtft = norm(res_Adf,2)./norm(Af(Ii,:),2);  % calculate data misfit 
@@ -88,13 +93,15 @@ while misfit > msftol && it < maxits
     if ~mod(it,plt) 
         % visualise best fit k-EM model and fitted data
         DGN.Ii = Ii; DGN.Ir = Ir; DGN.rm = rm;
-        visualise({X0,Xf,Fbf},{'data','fitted data','fitted EM'},['it ',num2str(it),';  misfit = ',num2str(misfit,4),';  removed ',num2str(length(Ir)),' outliers;'],DGN,VNAME)
-        figure(3); 
-        plot(it,log10(msft_dtft),'bo',it,log10(msft_ngpr),'gd',it,log10(misfit),'r^','MarkerSize',5,'LineWidth',1.5); hold on; box on;
-        if it==plt
-            title('Convergence of Optimisation','FontSize',16); 
-            xlabel('iterations','FontSize',14); ylabel('log10 misfit','FontSize',14);
-            set(gca,'LineWidth',1.5);
+        visualise({X0,Xf,Ff},{'data','fitted data','fitted EM'},['it ',num2str(it),';  misfit = ',num2str(misfit,4),';  removed ',num2str(length(Ir)),' outliers;'],DGN,VNAME)
+        if it>1
+            figure(3);
+            plot(it,log10(msft_dtft),'bo',it,log10(msft_ngpr),'gd',it,log10(misfit),'r^','MarkerSize',5,'LineWidth',1.5); axis([1,it,log10(bestfit)-1,0]); hold on; box on;
+            if it==plt
+                title('Convergence of Optimisation','FontSize',16);
+                xlabel('iterations','FontSize',14); ylabel('log10 misfit','FontSize',14);
+                set(gca,'LineWidth',1.5);
+            end
         end
         
         % report new best fit and diagnostics
