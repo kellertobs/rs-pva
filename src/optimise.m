@@ -96,13 +96,13 @@ while misfit > msftol && it < maxits
         
         % report new best fit and diagnostics
         if                  it <  10
-            disp(['    ---  it    ',int2str(it),';  misfit ',num2str(bestfit,'%1.3e'),';  removed ',int2str(rm),' outliers;'])
+            disp(['    ---  it    ',int2str(it),';  misfit ',num2str(misfit,'%1.3e'),';  removed ',int2str(rm),' outliers;'])
         elseif it >= 10  && it < 100
-            disp(['    ---  it   ',int2str(it),';  misfit ',num2str(bestfit,'%1.3e'),';   removed ',int2str(rm),' outliers;'])
+            disp(['    ---  it   ',int2str(it),';  misfit ',num2str(misfit,'%1.3e'),';   removed ',int2str(rm),' outliers;'])
         elseif it >= 100 && it < 1000
-            disp(['    ---  it  ',int2str(it),';  misfit ',num2str(bestfit,'%1.3e'),';  removed ',int2str(rm),' outliers;'])
+            disp(['    ---  it  ',int2str(it),';  misfit ',num2str(misfit,'%1.3e'),';  removed ',int2str(rm),' outliers;'])
         else
-            disp(['    ---  it ',int2str(it),';  misfit ',num2str(bestfit,'%1.3e'),';  removed ',int2str(rm),' outliers;'])
+            disp(['    ---  it ',int2str(it),';  misfit ',num2str(misfit,'%1.3e'),';  removed ',int2str(rm),' outliers;'])
         end
     end
 
@@ -114,13 +114,13 @@ while misfit > msftol && it < maxits
         Abf     = Af;
         Xbf     = Xf;
     end
-    if misfit > 10*bestfit
-        error(['  ! Optimisation algorithm diverged after',int2str(it),' iterations.']);
+    if misfit > 1e3*bestfit
+        error(['  ! Optimisation algorithm diverged after ',int2str(it),' iterations.']);
     end
    
     it = it+1; % increment iteration count
     if it == maxits
-        disp(['  ! Optimisation stopped after',int2str(maxits),' iterations; final misfit ',num2str(misfit)]);
+        disp(['  ! Optimisation stopped after ',int2str(maxits),' iterations; final misfit ',num2str(misfit)]);
     end
 end
 

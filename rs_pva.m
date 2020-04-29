@@ -129,22 +129,24 @@ while repeat
     
     % calculate scaled EM comp Fppvm
     Fppvm = (Appvm'*Appvm)\(Appvm'*Qsqk);
-    
+
     % scale back EM comp 'Fvm' and mix prop 'Avm' to measurement units
     [Avm,Fvm] = scaleup(Fppvm,Appvm,Xns);
     
-    % get fitted, row-sum normalised data 'Xnsf' in for k-EM model
-    Xnsf = Avm*Fvm;
+    % get fitted, row-sum normalised data 'X0' in for k-EM model
+    X0 = Avm*Fvm;
     
     % remove outlier points with bad fit to k-EM model
-    ir         = find(std(Xnsf-Xns,[],2).^2./std(Xns(:)).^2 > ORtol);
+    ir         = find(std(X0-Xns,[],2).^2./std(Xns(:)).^2 > ORtol);
     DGN.Ir     = ir;
     DGN.Ii     = (1:m).';
     DGN.Ii(ir) = [];
     DGN.rm     = length(DGN.Ir);
     
     % visualise principle components and fitted data for k-EM model
-    visualise({Xns,Xnsf,Fvm},{'data','fitted data','principal comp.'},['Fitted data with ',num2str(k),' principle components;',int2str(DGN.rm),' outliers removed.'],DGN,VNAME)
+    PC = eye(k);
+    PCNAME = {}; for i=1:k; PCNAME = [PCNAME,{['PC',int2str(i)]}]; end
+    visualise({Appvm,PC},{'transf. data','principal comp.'},['Transformed data in ',num2str(k),' principle component space;'],DGN,PCNAME)
     
     % plot selection metrics
     FS = {'FontSize',14}; MS = {'MarkerSize',8}; LW = {'LineWidth',1.5};
@@ -154,7 +156,7 @@ while repeat
     plot(DGN.SVD(:,1),DGN.SVD(:,2),'k-',DGN.SVD(:,1),DGN.SVD(:,2),'ko',MS{:},LW{:}); hold on; box on; axis tight;
     plot(DGN.SVD(k,1),DGN.SVD(k,2),'ro',MS{:},LW{:});
     set(gca,LW{:});
-    title('singular values',FS{:});
+    title('log10 singular values',FS{:});
     subplot(1,3,2)
     plot([DGN.SVD(1,1),DGN.SVD(end,1)],[CVtol,CVtol],'b-',MS{:},LW{:}); hold on; box on; axis tight;
     plot(DGN.SVD(:,1),DGN.SVD(:,4),'k-',DGN.SVD(:,1),DGN.SVD(:,4),'ko',MS{:},LW{:});
@@ -192,23 +194,26 @@ if isempty(init_method); init_method = dft; end
 
 if     init_method == 1  % Initialise on k mutually extreme samples (Full, et al., 1981)
     [App0,Fpp0] = extreme(Appvm,Fppvm,Xns,DGN);
-    [A0,F0]     = scaleup(Fpp0,App0,Xns);
-
+    [~,F0]      = scaleup(Fpp0,App0,Xns);
+    F0 = max(0,F0); F0 = F0./sum(F0,2).*100;
+    A0 = (X0*X0.')/(F0*X0.');
 elseif init_method == 2  % Initialise on k fcm centroids (Full, et al., 1982)
     disp(' ');
-    [F0,~,~] = fcm(Xns,k);
-    A0       = (Xns*Xns.')/(F0*Xns.');
+    [F0,~,~] = fcm(X0,k);
+    F0 = max(0,F0); F0 = F0./sum(F0,2).*100;
+    A0 = (X0*X0.')/(F0*X0.');
     disp(' ');
 elseif init_method == 3  % Initialise on k varimax principal components
-    A0 = Avm;
     F0 = Fvm;
+    F0 = max(0,F0); F0 = F0./sum(F0,2).*100;
+    A0 = (X0*X0.')/(F0*X0.');
 end
 
 % visualise initial polytope and fitted data for k-EM model
-visualise({Xns,Xnsf,F0},{'data','fitted data','EM initial guess'},['Fitted data with ',num2str(k),'-EM starting guess;',int2str(DGN.rm),' outliers removed.'],DGN,VNAME)
+visualise({Xns,X0,F0},{'data','fitted data','EM initial guess'},['Fitted data with ',num2str(k),'-EM starting guess;',int2str(DGN.rm),' outliers removed.'],DGN,VNAME)
 
 % optimise for best fit EM compositions 'Fbf', mixing proportions 'Abf', and fitted data 'Xbf'
-[Abf,Fbf,Xbf,DGN] = optimise(A0,F0,Xnsf,DGN,VNAME);
+[Abf,Fbf,Xbf,DGN] = optimise(A0,F0,X0,DGN,VNAME);
 
 % report final data fit and EM compositions
 DGN.CD = (std(Xns).^2-std(Xbf-Xns).^2)./std(Xns).^2;
