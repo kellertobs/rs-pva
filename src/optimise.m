@@ -35,18 +35,20 @@ rng(15);
 figure(3); clf;
 
 % adjust convergence tolerances and step parameters
-dft = [1e-6, 0.01, 1e4, 0.5];
+dft = [1e-6, 0.01, 1e4, 0.5, 0.0];
 par = input(['->  Adjust convergence parameters as list: [msftol,negtol,maxits,alpha] \n' ...
              '    msftol: misfit tolerance for convergence          (dft = ',num2str(dft(1)),') \n' ...
              '    negtol: tolerance for negative mixing proportions (dft = ',num2str(dft(2)),') \n' ...
              '    maxits: unsuccesful iterations to outlier removal (dft = ',num2str(dft(3)),') \n' ...
-             '    alpha : step size for iterative update            (dft = ',num2str(dft(4)),') \n']);
+             '    alpha : step size for iterative update            (dft = ',num2str(dft(4)),') \n' ...
+             '    beta  : step size for randomised update           (dft = ',num2str(dft(4)),') \n']);
 if isempty(par); par = dft; end
 
 msftol  = par(1);
 negtol  = par(2);
 maxits  = par(3);
 alpha   = par(4);
+beta    = par(5);
 
 % set preference for plotting progress
 dft = 1;
@@ -63,11 +65,12 @@ while misfit > msftol && it < maxits
     % update mixing proportions (no smaller than tolerance, unity sum)
     Af(Ii,:) = Af(Ii,:) + alpha .* res_Adf;
     Af(Ii,:) = Af(Ii,:) + alpha .* res_Ann;
+    Af(Ii,:) = Af(Ii,:) + beta  .* (normrnd(Abf(Ii,:),abs(Abf(Ii,:)).*min(1,bestfit)) - Af(Ii,:));
     Af = Af./sum(Af,2);
     
     % update EM compositions (no negatives, 100% sum)
     Ff = (Af(Ii,:).'*Af(Ii,:))\(Af(Ii,:).'*X0(Ii,:));  % Lsq-solve for EM comp
-    Ff = max(0.01,Ff);  % zero out negative EM comp
+    Ff = max(1e-3,Ff);  % zero out negative EM comp
     Ff = Ff./sum(Ff,2).*100;  % normalise EM comp to 100% sum
         
     % update data fit
@@ -85,7 +88,7 @@ while misfit > msftol && it < maxits
     if ~mod(it,plt) 
         % visualise best fit k-EM model and fitted data
         DGN.Ii = Ii; DGN.Ir = Ir; DGN.rm = rm;
-        visualise({X0,Xf,Fbf},{'data','fitted data','fitted EM'},['it ',num2str(it),';  misfit = ',num2str(bestfit,4),';  removed ',num2str(length(Ir)),' outliers;'],DGN,VNAME)
+        visualise({X0,Xf,Fbf},{'data','fitted data','fitted EM'},['it ',num2str(it),';  misfit = ',num2str(misfit,4),';  removed ',num2str(length(Ir)),' outliers;'],DGN,VNAME)
         figure(3); 
         plot(it,log10(msft_dtft),'bo',it,log10(msft_ngpr),'gd',it,log10(misfit),'r^','MarkerSize',5,'LineWidth',1.5); hold on; box on;
         if it==plt
