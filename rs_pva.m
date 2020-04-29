@@ -194,19 +194,15 @@ if isempty(init_method); init_method = dft; end
 
 if     init_method == 1  % Initialise on k mutually extreme samples (Full, et al., 1981)
     [App0,Fpp0] = extreme(Appvm,Fppvm,Xns,DGN);
-    [~,F0]      = scaleup(Fpp0,App0,Xns);
-    F0 = max(0,F0); F0 = F0./sum(F0,2).*100;
-    A0 = (X0*X0.')/(F0*X0.');
+    [A0,F0]      = scaleup(Fpp0,App0,Xns);
 elseif init_method == 2  % Initialise on k fcm centroids (Full, et al., 1982)
     disp(' ');
     [F0,~,~] = fcm(X0,k);
-    F0 = max(0,F0); F0 = F0./sum(F0,2).*100;
     A0 = (X0*X0.')/(F0*X0.');
     disp(' ');
 elseif init_method == 3  % Initialise on k varimax principal components
+    A0 = Avm;
     F0 = Fvm;
-    F0 = max(0,F0); F0 = F0./sum(F0,2).*100;
-    A0 = (X0*X0.')/(F0*X0.');
 end
 
 % visualise initial polytope and fitted data for k-EM model
